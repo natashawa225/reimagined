@@ -388,6 +388,8 @@ Return as JSON:
 You are an expert IELTS examiner. Score this essay using the official IELTS Writing Task 2 criteria:
 
 ${RUBRIC_CRITERIA}
+Here are the training examples, they all have holistic_essay_score, you need to use that to have a better judgement on the score of user's essay:
+${TRAINING_EXAMPLES}
 
 IELTS Task 2 Prompt:
 "${prompt}"
