@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, AlertTriangle, Eye, Sparkles } from "lucide-react"
 import { ArgumentDiagram } from "@/components/argument-diagram"
 import { TTSButton } from "@/components/tts-button"
-import type { AnalysisResult,ArgumentElement } from "@/lib/types"
+import type { AnalysisResult } from "@/lib/types"
 
 interface CombinedAnalysisProps {
   analysis: AnalysisResult
@@ -101,7 +101,9 @@ export function CombinedAnalysis({
   return (
     <div className="space-y-6">
       {/* Visual Structure Diagram */}
-      <ArgumentDiagram analysis={analysis} essay={essay}/>
+      <ArgumentDiagram analysis={analysis} essay={essay} 
+      // accessibilityMode={accessibilityMode} 
+      />
 
       {/* Interactive Element Analysis */}
       <Card className={getCardClasses()}>
@@ -133,44 +135,21 @@ export function CombinedAnalysis({
                       <div className="flex items-center justify-between">
                         <h4 className={`font-semibold ${getTextClasses()}`}>{label}</h4>
                         <div
-                          className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs border ${getEffectivenessColor(Array.isArray(element) ? element[0].effectiveness : element.effectiveness)} ${accessibilityMode === "dyslexia" ? "text-sm px-3 py-2" : ""}`}
+                          className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs border ${getEffectivenessColor(element.effectiveness)} 
+                          ${accessibilityMode === "dyslexia" ? "text-sm px-3 py-2" : ""}`}
                         >
-                          {Array.isArray(element)
-                            ? element.map((el, i) => (
-                                <span key={i} className="flex items-center gap-1">
-                                    {getEffectivenessIcon(el.effectiveness)}
-                                    <span className="font-medium">{el.effectiveness}</span>
-                                </span>
-                                ))
-                            : (
-                                <>
-                                    {getEffectivenessIcon(element.effectiveness)}
-                                    <span className="font-medium">{element.effectiveness}</span>
-                                </>
-                                )
-                            }
+                          {getEffectivenessIcon(element.effectiveness)}
+                          <span className="font-medium">{element.effectiveness}</span>
                         </div>
                       </div>
                       <p className={`text-xs text-gray-600 ${getTextClasses()}`}>{description}</p>
-                      {Array.isArray(element)
-                        ? element.map((el, i) =>
-                            el.text && (
-                                <p
-                                key={i}
-                                className={`text-xs bg-gray-50 p-2 rounded border-l-2 border-blue-300 ${accessibilityMode === "dyslexia" ? "text-sm p-3" : ""}`}
-                                >
-                                "{el.text.substring(0, accessibilityMode === "dyslexia" ? 80 : 60)}..."
-                                </p>
-                            )
-                            )
-                        : element.text && (
-                            <p
-                                className={`text-xs bg-gray-50 p-2 rounded border-l-2 border-blue-300 ${accessibilityMode === "dyslexia" ? "text-sm p-3" : ""}`}
-                            >
-                                "{element.text.substring(0, accessibilityMode === "dyslexia" ? 80 : 60)}..."
-                            </p>
-                            )
-                        }
+                      {element.text && (
+                        <p
+                          className={`text-xs bg-gray-50 p-2 rounded border-l-2 border-blue-300 ${accessibilityMode === "dyslexia" ? "text-sm p-3" : ""}`}
+                        >
+                          "{element.text.substring(0, accessibilityMode === "dyslexia" ? 80 : 60)}..."
+                        </p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -195,68 +174,35 @@ export function CombinedAnalysis({
                 </p>
               </div>
               {ttsEnabled && (
-                <TTSButton text={Array.isArray(analysis.elements[selectedElement as keyof typeof analysis.elements]) ? (analysis.elements[selectedElement as keyof typeof analysis.elements] as ArgumentElement[]).map((el) => el.feedback).join(" ") : (analysis.elements[selectedElement as keyof typeof analysis.elements] as ArgumentElement).feedback} />
+                <TTSButton text={analysis.elements[selectedElement as keyof typeof analysis.elements].feedback} />
               )}
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-            {Array.isArray(analysis.elements[selectedElement as keyof typeof analysis.elements])
-                ? (analysis.elements[selectedElement as keyof typeof analysis.elements] as ArgumentElement[]).map((el, i) => (
-                    <div key={i} className={`p-4 bg-white rounded-lg border ${accessibilityMode === "dyslexia" ? "p-6" : ""}`}>
-                        <h5 className={`font-semibold text-blue-800 mb-2 ${getTextClasses()}`}>Identified Text #{i + 1}:</h5>
-                        <p
-                        className={`text-sm cursor-pointer hover:bg-yellow-100 p-2 rounded transition-colors ${getTextClasses()}`}
-                        onClick={() => handleFeedbackClick(el.text)}
-                        >
-                        "{el.text}"
-                        </p>
-                        <h5 className={`font-semibold text-blue-800 mb-2 ${getTextClasses()}`}>Feedback #{i + 1}:</h5>
-                        <p
-                        className={`text-sm cursor-pointer hover:bg-yellow-100 p-2 rounded transition-colors ${getTextClasses()}`}
-                        onClick={() => handleFeedbackClick(el.text)}
-                        >
-                        {el.feedback}
-                        </p>
-                    </div>
-                ))
-            : (analysis.elements[selectedElement as keyof typeof analysis.elements] as ArgumentElement)?.text && (
+              {analysis.elements[selectedElement as keyof typeof analysis.elements]?.text && (
                 <div className={`p-4 bg-white rounded-lg border ${accessibilityMode === "dyslexia" ? "p-6" : ""}`}>
-                    <h5 className={`font-semibold text-blue-800 mb-2 ${getTextClasses()}`}>Identified Text:</h5>
-                    <p
+                  <h5 className={`font-semibold text-blue-800 mb-2 ${getTextClasses()}`}>Identified Text:</h5>
+                  <p
                     className={`text-sm cursor-pointer hover:bg-yellow-100 p-2 rounded transition-colors ${getTextClasses()}`}
                     onClick={() =>
-                        handleFeedbackClick(
-                        (analysis.elements[selectedElement as keyof typeof analysis.elements] as ArgumentElement).text
-                        )
+                      handleFeedbackClick(analysis.elements[selectedElement as keyof typeof analysis.elements].text)
                     }
-                    >
-                        "{(analysis.elements[selectedElement as keyof typeof analysis.elements] as ArgumentElement).text}"
-                      </p>
-                      <h5 className={`font-semibold text-blue-800 mb-2 ${getTextClasses()}`}>Feedback:</h5>
-                      <p
-                        className={`text-sm cursor-pointer hover:bg-yellow-100 p-2 rounded transition-colors ${getTextClasses()}`}
-                        onClick={() =>
-                          handleFeedbackClick(
-                            (analysis.elements[selectedElement as keyof typeof analysis.elements] as ArgumentElement).text
-                          )
-                        }
-                      >
-                        {(analysis.elements[selectedElement as keyof typeof analysis.elements] as ArgumentElement).feedback}
-                      </p>
-                    </div>
-                )
-            }
+                  >
+                    "{analysis.elements[selectedElement as keyof typeof analysis.elements].text}"
+                  </p>
+                </div>
+              )}
 
               <div className={`p-4 bg-white rounded-lg border ${accessibilityMode === "dyslexia" ? "p-6" : ""}`}>
                 <h5 className={`font-semibold text-blue-800 mb-2 ${getTextClasses()}`}>Feedback:</h5>
                 <p
                   className={`text-sm cursor-pointer hover:bg-yellow-100 p-2 rounded transition-colors ${getTextClasses()}`}
                   onClick={() =>
-                    handleFeedbackClick(Array.isArray(analysis.elements[selectedElement as keyof typeof analysis.elements]) ? (analysis.elements[selectedElement as keyof typeof analysis.elements] as ArgumentElement[]).map((el) => el.text).join(" ") : (analysis.elements[selectedElement as keyof typeof analysis.elements] as ArgumentElement).text)
+                    handleFeedbackClick(analysis.elements[selectedElement as keyof typeof analysis.elements].text)
                   }
                 >
-                  {Array.isArray(analysis.elements[selectedElement as keyof typeof analysis.elements]) ? (analysis.elements[selectedElement as keyof typeof analysis.elements] as ArgumentElement[]).map((el) => el.feedback).join(" ") : (analysis.elements[selectedElement as keyof typeof analysis.elements] as ArgumentElement).feedback}
+                  {analysis.elements[selectedElement as keyof typeof analysis.elements].feedback}
                 </p>
               </div>
 
@@ -303,3 +249,4 @@ export function CombinedAnalysis({
     </div>
   )
 }
+

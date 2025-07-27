@@ -56,6 +56,7 @@ export default function IELTSFeedbackApp() {
       const result = await response.json()
       setAnalysis(result)
       setActiveTab("structure-analysis")
+
     } catch (error) {
       console.error("Analysis error:", error)
       const errorMessage = error instanceof Error ? error.message : "Analysis failed. Please try again."
@@ -164,8 +165,8 @@ export default function IELTSFeedbackApp() {
     if (wordCount < 200 && wordCount > 0) {
       return <Badge className="bg-amber-600 text-white">Need {200 - wordCount} more</Badge>
     }
-    if (wordCount > 600) {
-      return <Badge className="bg-red-600 text-white">Too Long ({wordCount - 600} over)</Badge>
+    if (wordCount > 6000) {
+      return <Badge className="bg-red-600 text-white">Too Long ({wordCount - 6000} over)</Badge>
     }
     return null
   }

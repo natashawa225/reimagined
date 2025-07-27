@@ -36,8 +36,8 @@ export interface AnalysisResult {
   elements: {
     lead: ArgumentElement
     position: ArgumentElement
-    claims: ArgumentElement[]
-    evidence: ArgumentElement[]
+    claims: ArgumentElement
+    evidence: ArgumentElement
     counterclaim: ArgumentElement
     rebuttal: ArgumentElement
     conclusion: ArgumentElement

@@ -6,11 +6,18 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Users, AlertTriangle, Download, Settings } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Users, AlertTriangle, Download, Settings, Eye, MessageSquare, Search, Filter } from "lucide-react"
+import { EssayReviewModal } from "@/components/essay-review-modal"
+import { mockStudentSubmissions, type StudentSubmission } from "@/lib/mock-teacher-data"
 
 export function TeacherDashboard() {
   const [selectedClass, setSelectedClass] = useState("class-1")
   const [feedbackMode, setFeedbackMode] = useState("standard")
+  const [selectedSubmission, setSelectedSubmission] = useState<StudentSubmission | null>(null)
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
 
   // Mock data - in real app, this would come from API
   const classData = {
@@ -25,49 +32,50 @@ export function TeacherDashboard() {
         { issue: "Poor paragraph transitions", count: 15, percentage: 83 },
         { issue: "Limited academic vocabulary", count: 10, percentage: 56 },
       ],
-      recentSubmissions: [
-        { student: "Alice Johnson", score: 7.5, submitted: "2 hours ago", issues: ["coherence"] },
-        { student: "Bob Smith", score: 5.5, submitted: "4 hours ago", issues: ["vocabulary", "grammar"] },
-        { student: "Carol Davis", score: 6.8, submitted: "1 day ago", issues: ["evidence"] },
-      ],
-    },
-    "class-2": {
-      name: "Intermediate Writing",
-      students: 30,
-      submissions: 22,
-      avgScore: 5.4,
-      commonIssues: [
-        { issue: "Incomplete conclusions", count: 14, percentage: 64 },
-        { issue: "Sentence fragments", count: 10, percentage: 45 },
-        { issue: "Basic vocabulary", count: 18, percentage: 82 },
-        { issue: "Lack of topic sentences", count: 9, percentage: 41 },
-      ],
-      recentSubmissions: [
-        { student: "David Lee", score: 5.9, submitted: "3 hours ago", issues: ["structure"] },
-        { student: "Eva Green", score: 4.8, submitted: "6 hours ago", issues: ["grammar", "vocabulary"] },
-        { student: "Fiona Martinez", score: 6.0, submitted: "2 days ago", issues: ["conclusion"] },
-      ],
-    },
-    "class-3": {
-      name: "IELTS Preparation",
-      students: 28,
-      submissions: 26,
-      avgScore: 6.8,
-      commonIssues: [
-        { issue: "Task response misalignment", count: 11, percentage: 42 },
-        { issue: "Inaccurate grammar usage", count: 16, percentage: 62 },
-        { issue: "Unclear introductions", count: 8, percentage: 31 },
-        { issue: "Lack of coherence", count: 13, percentage: 50 },
-      ],
-      recentSubmissions: [
-        { student: "George Tan", score: 7.0, submitted: "1 hour ago", issues: ["task response"] },
-        { student: "Hannah Kim", score: 6.3, submitted: "5 hours ago", issues: ["grammar"] },
-        { student: "Ibrahim Zayed", score: 7.2, submitted: "Yesterday", issues: ["coherence"] },
-      ],
     },
   }
 
   const currentClass = classData[selectedClass as keyof typeof classData]
+
+  // Filter submissions based on search and status
+  const filteredSubmissions = mockStudentSubmissions.filter((submission) => {
+    const matchesSearch = submission.studentName.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = statusFilter === "all" || submission.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
+
+  const handleOpenEssay = (submission: StudentSubmission) => {
+    setSelectedSubmission(submission)
+    setIsReviewModalOpen(true)
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "reviewed":
+        return "bg-green-100 text-green-800"
+      case "graded":
+        return "bg-blue-100 text-blue-800"
+      case "pending":
+        return "bg-yellow-100 text-yellow-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getScoreColor = (score: number) => {
+    if (score >= 7) return "text-green-600"
+    if (score >= 5) return "text-yellow-600"
+    return "text-red-600"
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -80,7 +88,7 @@ export function TeacherDashboard() {
                 <Users className="h-5 w-5" />
                 Teacher Dashboard
               </CardTitle>
-              <p className="text-sm text-gray-600">Monitor student progress and identify common writing issues</p>
+              <p className="text-sm text-gray-600">Monitor student progress and provide detailed feedback</p>
             </div>
             <div className="flex gap-4">
               <Select value={selectedClass} onValueChange={setSelectedClass}>
@@ -102,13 +110,104 @@ export function TeacherDashboard() {
         </CardHeader>
       </Card>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs defaultValue="submissions" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="submissions">Student Submissions</TabsTrigger>
           <TabsTrigger value="overview">Class Overview</TabsTrigger>
           <TabsTrigger value="issues">Common Issues</TabsTrigger>
-          <TabsTrigger value="students">Student Progress</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="submissions" className="space-y-6">
+          {/* Filters and Search */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex gap-4 items-center">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      placeholder="Search students..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-40">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="reviewed">Reviewed</SelectItem>
+                    <SelectItem value="graded">Graded</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Student Submissions List */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Student Submissions ({filteredSubmissions.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {filteredSubmissions.map((submission) => (
+                  <div
+                    key={submission.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 font-semibold text-sm">
+                          {submission.studentName
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </span>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold">{submission.studentName}</h4>
+                        <p className="text-sm text-gray-600">Submitted {formatDate(submission.submittedAt)}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge className={getStatusColor(submission.status)}>
+                            {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                          </Badge>
+                          <span className={`text-sm font-medium ${getScoreColor(submission.analysis.holisticScore)}`}>
+                            Score: {submission.analysis.holisticScore}/9
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {submission.teacherComment && (
+                        <Badge variant="outline" className="text-xs">
+                          <MessageSquare className="h-3 w-3 mr-1" />
+                          Has Comment
+                        </Badge>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenEssay(submission)}
+                        className="flex items-center gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Review Essay
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="overview" className="space-y-6">
           {/* Class Statistics */}
@@ -151,35 +250,6 @@ export function TeacherDashboard() {
               </CardContent>
             </Card>
           </div>
-
-          {/* Recent Submissions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Submissions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {currentClass.recentSubmissions.map((submission, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <h4 className="font-medium">{submission.student}</h4>
-                      <p className="text-sm text-gray-600">{submission.submitted}</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex gap-2">
-                        {submission.issues.map((issue, i) => (
-                          <Badge key={i} variant="secondary" className="text-xs">
-                            {issue}
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="text-lg font-bold text-blue-600">{submission.score}/9</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="issues" className="space-y-6">
@@ -226,56 +296,6 @@ export function TeacherDashboard() {
                     </div>
                   </div>
                 ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Instructional Recommendations */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Instructional Recommendations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <h4 className="font-medium text-red-800 mb-2">High Priority &gt;70% of students</h4>
-                  <p className="text-sm text-red-700">
-                    <strong>Poor paragraph transitions:</strong> Consider dedicating a lesson to cohesive devices and
-                    paragraph linking strategies.
-                  </p>
-                </div>
-
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <h4 className="font-medium text-yellow-800 mb-2">Medium Priority 40-70% of students</h4>
-                  <p className="text-sm text-yellow-700">
-                    <strong>Weak thesis statements & Limited academic vocabulary:</strong> Focus on thesis construction
-                    and introduce AWL vocabulary exercises.
-                  </p>
-                </div>
-
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <h4 className="font-medium text-green-800 mb-2">Individual Support &lt;40% of students</h4>
-                  <p className="text-sm text-green-700">
-                    <strong>Missing evidence:</strong> Provide targeted support to specific students on evidence
-                    integration.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="students" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Individual Student Progress</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* This would show individual student progress over time */}
-                <p className="text-gray-600">
-                  Individual student tracking and progress visualization would be implemented here.
-                </p>
               </div>
             </CardContent>
           </Card>
@@ -334,6 +354,17 @@ export function TeacherDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Essay Review Modal */}
+      <EssayReviewModal
+        submission={selectedSubmission}
+        isOpen={isReviewModalOpen}
+        onClose={() => {
+          setIsReviewModalOpen(false)
+          setSelectedSubmission(null)
+        }}
+      />
     </div>
   )
 }
+
